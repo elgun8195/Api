@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApplication1.Data;
 using WebApplication1.Data.DAL;
 using WebApplication1.Data.Entities;
+using WebApplication1.DTO;
 
 namespace WebApplication1.Controllers
 {
@@ -27,8 +29,15 @@ namespace WebApplication1.Controllers
         [HttpGet]
         public IActionResult Get()
         {
-            List<Product> products = _context.Products.Include(p=>p.Category).Where(p => p.IsDeleted == false).ToList();
-            return StatusCode(200, products);
+            List<ProductReturnDto> productList = _context.Products.Select(p => new ProductReturnDto
+            {
+                Name = p.Name,
+                Price = p.Price,
+                Desc = p.Desc,
+                CategoryName = p.Category.Name,
+                Image = $"https://localhost:44314/img/{p.Image}"
+            }).ToList();
+            return StatusCode(200, productList);
         }
 
 
@@ -47,17 +56,17 @@ namespace WebApplication1.Controllers
 
 
         [HttpPost("")]
-        public async Task<IActionResult> Create([FromForm]Product product)
+        public async Task<IActionResult> Create([FromForm]ProductCreateDto product)
         {
             
 
             Product newc = new Product();
 
-            if (!newc.Photo.isImage())
+            if (!product.Photo.isImage())
             {
                 return BadRequest("Sekil secin");
             }
-            if (newc.Photo.CheckSize(20000))
+            if (product.Photo.CheckSize(20000))
             {
                 return BadRequest("Olcu problemi");
             }
@@ -65,13 +74,8 @@ namespace WebApplication1.Controllers
             newc.Desc = product.Desc;
             newc.Price=product.Price;
             newc.CategoryId = product.CategoryId;
-            newc.Image =await newc.Photo.SaveImage(_env,"img");
-
-
-
-
-
-
+            newc.Image =await product.Photo.SaveImage(_env,"img");
+            newc.CreatedTime = DateTime.Now;
             _context.Add(newc);
             _context.SaveChanges();
             return StatusCode(200, newc);

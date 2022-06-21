@@ -2,9 +2,8 @@
 
 namespace WebApplication1.Data.Entities
 {
-    public class Category
+    public class Category : BaseEntity
     {
-        public int Id { get; set; }
         public string Name { get; set; }
         public string Desc { get; set; }
         public bool IsDeleted { get; set; }
