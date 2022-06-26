@@ -4,7 +4,7 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Fiorella_Webim.Extensions
+namespace WebApplication1.Extensions
 {
     public static class Extension
     {

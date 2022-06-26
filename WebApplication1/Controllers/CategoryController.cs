@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
-using WebApplication1.Data;
 using WebApplication1.Data.DAL;
 using WebApplication1.Data.Entities;
 
@@ -12,104 +11,94 @@ namespace WebApplication1.Controllers
     [ApiController]
     public class CategoryController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private AppDbContext _context;
 
         public CategoryController(AppDbContext context)
         {
             _context = context;
         }
+
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult Get()
         {
-            List<Category> categories = _context.Categories.Where(p=>p.IsDeleted==false).ToList();
-            return StatusCode(200,categories);
-        }
+            List<Category> categories = _context.Categories.Where(c => c.IsDeleted == false).ToList();
 
-
-        [HttpGet("isdelete")]
-        public IActionResult GetAllDeleted()
-        {
-            List<Category> categories = _context.Categories.Where(p => p.IsDeleted).ToList();
             return StatusCode(200, categories);
         }
 
 
-        [HttpGet("{id}")]
-        public IActionResult GetOne(int id)
+
+        [HttpGet("isdelete")]
+        public IActionResult GetDeleted()
         {
-            Category Category = _context.Categories.Where(p => p.IsDeleted == false).FirstOrDefault(p=>p.Id==id);
-            if (Category == null)
-            {
-                return NotFound();
-            }
-            return StatusCode(200, Category);
+            List<Category> categories = _context.Categories.Where(c => c.IsDeleted).ToList();
+
+            return StatusCode(200, categories);
         }
 
+        [HttpGet("{id}")]
+        public IActionResult Get(int id)
+        {
+            Category category = _context.Categories.Where(c => c.IsDeleted == false).FirstOrDefault(c => c.Id == id);
+
+            if (category == null) return NotFound();
+
+            return StatusCode(200, category);
+        }
 
         [HttpPost("")]
         public IActionResult Create(Category category)
         {
-            bool existName=_context.Categories.Any(c=>c.Name==category.Name);
+            bool isExistName = _context.Categories.Any(c => c.Name == category.Name);
 
-
-            if (existName)
+            if (isExistName)
             {
-                return BadRequest();
+                return BadRequest("Already exist");
             }
-
-
-            Category newc=new Category();
-            newc.Name=category.Name;
-            newc.Desc=category.Desc;
-            _context.Add(newc);
+            Category newCategory = new Category();
+            newCategory.Name = category.Name;
+            newCategory.Desc = category.Desc;
+            _context.Add(newCategory);
             _context.SaveChanges();
-            return StatusCode(200, newc);
+            return StatusCode(201, newCategory);
         }
 
-
         [HttpPut("{id}")]
-        public IActionResult Update(Category category,int? id)
+        public IActionResult Update(int? id, Category category)
         {
-            if (id==null)
-            {
-                return NotFound();
-            }
-            Category dbCategory = _context.Categories.Where(c=>c.IsDeleted==false).FirstOrDefault(c=>c.Id==id);
-            if (dbCategory == null)
-            {
-                return NotFound();
-            }
-            Category existName = _context.Categories.Where(c => c.IsDeleted == false)
-                .FirstOrDefault(c=>c.Name==category.Name);
+            if (id == null) return NotFound();
 
+            Category dbCategory = _context.Categories.Where(c => c.IsDeleted == false).FirstOrDefault(c => c.Id == id);
 
-            if (existName!=null)
+            if (dbCategory == null) return NotFound();
+
+            Category dbCategoryWithName = _context.Categories.Where(c => c.IsDeleted == false).FirstOrDefault(c => c.Name == category.Name);
+
+            if (dbCategory != null)
             {
-                if (dbCategory!=existName)
+                if (dbCategory != dbCategoryWithName)
                 {
-                    return BadRequest();
+                    return BadRequest("Already exist");
                 }
             }
 
-            dbCategory.Name=category.Name;
-            dbCategory.Desc=category.Desc;
+            dbCategory.Name = category.Name;
+            dbCategory.Desc = category.Desc;
             _context.SaveChanges();
+
             return NoContent();
         }
-
 
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
-            Category Category = _context.Categories.Where(p => p.IsDeleted == false).FirstOrDefault(p => p.Id == id);
-            if (Category == null)
-            {
-                return NotFound();
-            }
+            Category category = _context.Categories.Where(c => c.IsDeleted == false).FirstOrDefault(c => c.Id == id);
 
-            Category.IsDeleted = true;
+            if (category == null) return NotFound();
+            category.IsDeleted = true;
             _context.SaveChanges();
-            return StatusCode(200, Category);
+
+            return StatusCode(200, category);
         }
     }
 }

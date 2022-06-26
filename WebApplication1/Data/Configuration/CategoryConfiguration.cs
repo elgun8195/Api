@@ -9,8 +9,6 @@ namespace WebApplication1.Data.Configuration
         public void Configure(EntityTypeBuilder<Category> builder)
         {
             builder.Property(x => x.Name).IsRequired(true).HasMaxLength(50);
-            builder.Property(x => x.Name).IsRequired(true).HasMaxLength(50);
-            builder.Property(x => x.CreatedTime).HasDefaultValue("GETUTCDATE()");
         }
     }
 }

@@ -9,6 +9,7 @@ namespace WebApplication1.Data.Configuration
         {
             builder.Property(x => x.Name).IsRequired(true).HasMaxLength(50);
             builder.Property(x=>x.IsDeleted).HasDefaultValue(false);
+            builder.Property(x => x.CreatedTime).HasDefaultValueSql("GETUTCDATE()");
         }
     }
 }

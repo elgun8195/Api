@@ -1,4 +1,6 @@
-﻿using Fiorella_Webim.Extensions;
+﻿using AutoMapper;
+using WebApplication1.Extensions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -8,82 +10,78 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using WebApplication1.Data;
-using WebApplication1.Data.DAL;
-using WebApplication1.Data.Entities;
-using WebApplication1.DTO;
+using WebApplication1.Data.DAL; 
+using WebApplication1.DTO; 
 
 namespace WebApplication1.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "Member")]
     public class ProductController : ControllerBase
     {
-        private readonly AppDbContext _context;
-        private IWebHostEnvironment _env;
+        private AppDbContext _context;
+        private readonly IWebHostEnvironment _env;
+        private readonly IMapper _mapper;
 
-        public ProductController(AppDbContext context, IWebHostEnvironment env)
+
+        public ProductController(IWebHostEnvironment env, AppDbContext context, IMapper mapper)
         {
-            _context = context;
             _env = env;
+            _context = context;
+            _mapper = mapper;
         }
+
+
+
         [HttpGet]
         public IActionResult Get()
         {
-            List<ProductReturnDto> productList = _context.Products.Select(p => new ProductReturnDto
-            {
-                Name = p.Name,
-                Price = p.Price,
-                Desc = p.Desc,
-                CategoryName = p.Category.Name,
-                Image = $"https://localhost:44314/img/{p.Image}"
-            }).ToList();
-            return StatusCode(200, productList);
-        }
+            List<Product> products = _context.Products.Include(p => p.Category).Where(c => c.IsDeleted == false).ToList();
 
+            List<ProductReturnDto> productsList = _mapper.Map<List<Product>, List<ProductReturnDto>>(products);
+
+            return StatusCode(200, productsList);
+        }
 
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            Product products = _context.Products.Include(p => p.Category).Where(p => p.IsDeleted == false).FirstOrDefault(p=>p.Id==id);
-
-            if (products==null)
+            Product product = _context.Products.Include(p => p.Category).Where(c => c.IsDeleted == false).FirstOrDefault(p => p.Id == id);
+            if (product == null)
             {
                 return NotFound();
             }
-            products.Image = $"https://localhost:44314/img/{products.Image}";
-            return StatusCode(200, products);
+            ProductReturnDto productReturn = _mapper.Map<Product, ProductReturnDto>(product);
+
+
+
+            return StatusCode(200, productReturn);
         }
 
 
         [HttpPost("")]
-        public async Task<IActionResult> Create([FromForm]ProductCreateDto product)
+        public async Task<IActionResult> Create([FromForm] ProductCreateDto productCreateDto)
         {
-            
-
-            Product newc = new Product();
-
-            if (!product.Photo.isImage())
+            Product newProduct = new Product();
+            if (!productCreateDto.Photo.isImage())
             {
-                return BadRequest("Sekil secin");
+                return BadRequest(ErrorMessage.IsNoImageFormat);
             }
-            if (product.Photo.CheckSize(20000))
+
+            if (productCreateDto.Photo.CheckSize(200000))
             {
-                return BadRequest("Olcu problemi");
+                return BadRequest(ErrorMessage.ValueIsGreatedThan);
             }
-            newc.Name = product.Name;
-            newc.Desc = product.Desc;
-            newc.Price=product.Price;
-            newc.CategoryId = product.CategoryId;
-            newc.Image =await product.Photo.SaveImage(_env,"img");
-            newc.CreatedTime = DateTime.Now;
-            _context.Add(newc);
+
+            newProduct.Name = productCreateDto.Name;
+            newProduct.Desc = productCreateDto.Desc;
+            newProduct.CategoryId = productCreateDto.CategoryId;
+            newProduct.Price = productCreateDto.Price;
+            newProduct.Image = await productCreateDto.Photo.SaveImage(_env, "img");
+            _context.Add(newProduct);
             _context.SaveChanges();
-            return StatusCode(200, newc);
+            return StatusCode(201, newProduct);
         }
-
-
-
-
-
     }
 }

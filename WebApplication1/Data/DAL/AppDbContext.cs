@@ -1,10 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using WebApplication1.Data.Configuration;
-using WebApplication1.Data.Entities;
+﻿using WebApplication1.Data.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using WebApplication1.Data.Configuration; 
 
 namespace WebApplication1.Data.DAL
 {
-    public class AppDbContext : DbContext
+    public class AppDbContext : IdentityDbContext<AppUser>
     {
         public AppDbContext(DbContextOptions options) : base(options)
         {
